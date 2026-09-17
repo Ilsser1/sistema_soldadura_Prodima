@@ -1,0 +1,6 @@
+{
+  "name": "PRODIMA Guatemala - ERP de Máquinas de Soldadura Industrial",
+  "description": "Sistema ERP industrial para PRODIMA Guatemala (prodimagt.com). Gestión integral de maquinaria de soldadura y corte (ESAB, Miller, Lincoln, Victor), técnicos homologados, asignaciones en campo, planes de calibración y mantenimiento preventivo, contratos y bitácora de auditoría ISO 9001.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
