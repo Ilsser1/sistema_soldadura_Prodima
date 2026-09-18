@@ -114,8 +114,8 @@ export const BitacoraView: React.FC<BitacoraViewProps> = ({
 
       <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-800/80 text-slate-400 font-semibold border-b border-slate-700 uppercase tracking-wider">
+          <table className="audit-table w-full text-left">
+            <thead className="audit-table-heading">
               <tr>
                 <th className="p-3">ID / Fecha Hora</th>
                 <th className="p-3">Usuario Responsable</th>
@@ -125,35 +125,30 @@ export const BitacoraView: React.FC<BitacoraViewProps> = ({
                 <th className="p-3 font-mono">Dirección IP</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="audit-table-body">
               {filteredBitacora.map(b => (
-                <tr key={b.id} className="hover:bg-slate-800/40 transition">
+                <tr key={b.id} className="audit-table-row">
                   <td className="p-3">
-                    <span className="font-mono text-amber-400 font-bold block">#{b.id}</span>
-                    <span className="text-[10px] text-slate-500">{new Date(b.fecha_hora || b.fecha || Date.now()).toLocaleString()}</span>
+                    <span className="audit-id font-semibold block">#{b.id}</span>
+                    <span className="audit-secondary whitespace-nowrap">{new Date(b.fecha_hora || b.fecha || Date.now()).toLocaleString()}</span>
                   </td>
-                  <td className="p-3 font-semibold text-slate-200">
+                  <td className="p-3 font-semibold">
                     {b.usuario_nombre}
                   </td>
                   <td className="p-3">
-                    <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-800 text-slate-300 border border-slate-700">
+                    <span className="audit-badge">
                       {b.modulo}
                     </span>
                   </td>
                   <td className="p-3">
-                    <span className={`px-2 py-0.5 text-[10px] font-bold rounded ${
-                      b.accion.includes('Creación') ? 'bg-emerald-500/20 text-emerald-400' :
-                      b.accion.includes('Asignación') ? 'bg-cyan-500/20 text-cyan-400' :
-                      b.accion.includes('Devolución') ? 'bg-indigo-500/20 text-indigo-400' :
-                      b.accion.includes('Mantenimiento') ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-700 text-slate-300'
-                    }`}>
+                    <span className="audit-badge audit-action">
                       {b.accion}
                     </span>
                   </td>
-                  <td className="p-3 text-slate-300 max-w-md">
+                  <td className="p-3 min-w-64 max-w-md break-words">
                     {b.detalles || b.descripcion}
                   </td>
-                  <td className="p-3 font-mono text-[11px] text-slate-500">
+                  <td className="p-3 audit-secondary font-mono">
                     {b.ip_address || b.direccion_ip}
                   </td>
                 </tr>
