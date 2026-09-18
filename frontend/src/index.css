@@ -166,3 +166,58 @@ html.theme-light .audit-table {
   white-space: nowrap;
 }
 .audit-action { background: var(--audit-action-bg); color: var(--audit-action-text); }
+
+
+.notifications-panel {
+  --notice-bg: #0f172a;
+  --notice-text: #f1f5f9;
+  --notice-muted: #cbd5e1;
+  --notice-border: #334155;
+  --notice-subtle: #1e293b;
+  --notice-link: #7dd3fc;
+  --notice-danger: #fda4af;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 12px);
+  width: 420px;
+  max-width: calc(100vw - 24px);
+  overflow: hidden;
+  border: 1px solid var(--notice-border);
+  border-radius: 16px;
+  background: var(--notice-bg);
+  color: var(--notice-text);
+  box-shadow: 0 16px 48px rgb(0 0 0 / 0.18);
+  font-size: 14px;
+  line-height: 1.5;
+  z-index: 50;
+}
+html.theme-light .notifications-panel {
+  --notice-bg: #ffffff;
+  --notice-text: #0f172a;
+  --notice-muted: #475569;
+  --notice-border: #e2e8f0;
+  --notice-subtle: #f8fafc;
+  --notice-link: #0369a1;
+  --notice-danger: #be123c;
+}
+.notifications-header { padding: 18px 20px; border-bottom: 1px solid var(--notice-border); }
+.notifications-title { display: block; font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+.notifications-header > div { flex-wrap: wrap; }
+.notification-count { margin-left: auto; color: var(--notice-muted); font-size: 12px; }
+.notifications-list { max-height: min(420px, 60dvh); overflow-y: auto; }
+.notification-item { padding: 16px 20px; }
+.notification-item + .notification-item { border-top: 1px solid var(--notice-border); }
+.notification-item:hover { background: var(--notice-subtle); }
+.notification-item-title { font-weight: 600; overflow-wrap: anywhere; }
+.notification-item > div:first-child > span:last-child { flex-shrink: 0; }
+.notification-message { margin: 8px 0 12px; color: var(--notice-muted); overflow-wrap: anywhere; }
+.notification-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; color: var(--notice-muted); font-size: 12px; }
+.notification-button { padding: 6px 4px; color: var(--notice-link); font-size: 13px; font-weight: 600; border-radius: 4px; cursor: pointer; }
+.notification-button:hover { text-decoration: underline; }
+.notification-button:focus-visible { outline: 2px solid var(--notice-link); outline-offset: 2px; }
+.notification-danger { color: var(--notice-danger); }
+.notifications-empty { padding: 36px 20px; text-align: center; color: var(--notice-muted); }
+.notifications-footer { padding: 10px 20px; text-align: center; border-top: 1px solid var(--notice-border); background: var(--notice-subtle); }
+@media (max-width: 640px) {
+  .notifications-panel { position: fixed; top: 72px; right: 12px; left: 12px; width: auto; }
+}

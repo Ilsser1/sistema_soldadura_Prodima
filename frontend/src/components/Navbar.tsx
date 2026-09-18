@@ -5,7 +5,6 @@ import { ProdimaLogo } from './ProdimaLogo';
 import {
   Bell,
   LogOut,
-  AlertTriangle,
   Menu,
   Sun,
   Moon,
@@ -137,27 +136,30 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={() => setShowAlertsDropdown(!showAlertsDropdown)}
               className="relative p-2 text-slate-300 hover:text-amber-400 hover:bg-slate-800 rounded-lg transition"
-              title="Centro de Alertas"
+              title="Notificaciones"
+              aria-label="Notificaciones"
+              aria-expanded={showAlertsDropdown}
+              aria-controls="notifications-panel"
             >
               <Bell className="w-5 h-5" />
               {displayUnreadCount > 0 && (
-                <span className="absolute top-1 right-1 bg-red-500 text-white font-bold text-[10px] w-4 h-4 rounded-full flex items-center justify-center animate-pulse">
+                <span className="absolute top-1 right-1 bg-red-500 text-white font-bold text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
                   {displayUnreadCount}
                 </span>
               )}
             </button>
 
             {showAlertsDropdown && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 py-2 text-xs z-50">
-                <div className="px-4 py-2 border-b border-slate-700 flex items-center justify-between">
-                  <span className="font-bold text-slate-200 flex items-center gap-1.5">
-                    <AlertTriangle className="w-4 h-4 text-amber-400" /> Alertas Automáticas
+              <div id="notifications-panel" role="region" aria-label="Notificaciones" className="notifications-panel">
+                <div className="notifications-header">
+                  <span className="notifications-title">
+                    Notificaciones
                   </span>
                   <div className="flex items-center gap-2">
                     {displayUnreadCount > 0 && onMarkAllAlertsRead && (
                       <button
                         onClick={onMarkAllAlertsRead}
-                        className="text-[11px] text-amber-400 hover:underline font-semibold"
+                        className="notification-button"
                         title="Marcar todas como leídas"
                       >
                         Leídas
@@ -166,38 +168,38 @@ export const Navbar: React.FC<NavbarProps> = ({
                     {alertas.length > 0 && onClearAllAlerts && (
                       <button
                         onClick={() => onClearAllAlerts()}
-                        className="text-[11px] text-red-400 hover:underline font-semibold flex items-center gap-0.5"
+                        className="notification-button notification-danger flex items-center gap-1"
                         title="Borrar todas las notificaciones"
                       >
                         <Trash2 className="w-3 h-3" /> Limpiar
                       </button>
                     )}
-                    <span className="text-[11px] bg-slate-700 text-slate-300 px-2 py-0.5 rounded-full">
+                    <span className="notification-count">
                       {displayUnreadCount} pendientes
                     </span>
                   </div>
                 </div>
 
-                <div className="max-h-72 overflow-y-auto divide-y divide-slate-700/60">
+                <div className="notifications-list">
                   {alertas.length === 0 ? (
-                    <div className="p-4 text-center text-slate-400">
+                    <div className="notifications-empty">
                       No hay alertas en la bandeja.
                     </div>
                   ) : (
                     (unreadAlerts.length > 0 ? unreadAlerts : alertas).slice(0, 6).map(alerta => (
-                      <div key={alerta.id} className="p-3 hover:bg-slate-700/50 transition flex flex-col gap-1">
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-slate-200">{alerta.titulo}</span>
+                      <div key={alerta.id} className="notification-item">
+                        <div className="flex items-start justify-between gap-3">
+                          <span className="notification-item-title">{alerta.titulo}</span>
                           {getPriorityBadge(alerta.prioridad)}
                         </div>
-                        <p className="text-slate-400 text-[11px] leading-tight">{alerta.mensaje}</p>
-                        <div className="flex items-center justify-between mt-1 pt-1 border-t border-slate-700/40 text-[10px] text-slate-500">
-                          <span>{new Date(alerta.fecha_generacion).toLocaleTimeString()}</span>
+                        <p className="notification-message">{alerta.mensaje}</p>
+                        <div className="notification-meta">
+                          <span>{new Date(alerta.fecha_generacion).toLocaleString('es-GT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                           <div className="flex items-center gap-2">
                             {!alerta.leida && onMarkAlertRead && (
                               <button
                                 onClick={() => onMarkAlertRead(alerta.id)}
-                                className="text-amber-400 hover:underline font-medium flex items-center gap-1"
+                                className="notification-button flex items-center gap-1"
                               >
                                 <Check className="w-3 h-3" /> Marcar leída
                               </button>
@@ -205,7 +207,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                             {onDeleteAlert && (
                               <button
                                 onClick={() => onDeleteAlert(alerta.id)}
-                                className="text-red-400 hover:text-red-300 hover:underline font-medium flex items-center gap-1"
+                                className="notification-button notification-danger flex items-center gap-1"
                                 title="Borrar notificación"
                               >
                                 <Trash2 className="w-3 h-3" /> Borrar
@@ -218,13 +220,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                   )}
                 </div>
 
-                <div className="p-2 border-t border-slate-700 text-center bg-slate-900/50">
+                <div className="notifications-footer">
                   <button
                     onClick={() => {
                       handleNavigateAlerts();
                       setShowAlertsDropdown(false);
                     }}
-                    className="text-amber-400 font-semibold hover:underline"
+                    className="notification-button"
                   >
                     Ver todas las alertas →
                   </button>
