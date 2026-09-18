@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS `roles` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `nombre` VARCHAR(50) NOT NULL UNIQUE,
   `descripcion` VARCHAR(255) NULL,
-  `fecha_creacion` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  `fecha_creacion` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------
@@ -42,8 +42,8 @@ CREATE TABLE IF NOT EXISTS `usuarios` (
   `password_hash` VARCHAR(255) NOT NULL,
   `rol` ENUM('Administrador', 'Supervisor', 'Técnico') NOT NULL DEFAULT 'Técnico',
   `estado` ENUM('Activo', 'Inactivo') NOT NULL DEFAULT 'Activo',
-  `fecha_creacion` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `ultimo_acceso` DATETIME NULL,
+  `fecha_creacion` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
+  `ultimo_acceso` DATETIME(3) NULL,
   INDEX `idx_usuarios_username` (`username`),
   INDEX `idx_usuarios_correo` (`correo`),
   INDEX `idx_usuarios_rol` (`rol`)
@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS `tecnicos` (
   `fecha_ingreso` DATE NOT NULL,
   `estado` ENUM('Activo', 'Inactivo') NOT NULL DEFAULT 'Activo',
   `usuario_id` INT NULL UNIQUE,
+  `homologado` BOOLEAN NOT NULL DEFAULT TRUE,
   CONSTRAINT `fk_tecnicos_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   INDEX `idx_tecnicos_dpi` (`DPI`),
   INDEX `idx_tecnicos_especialidad` (`especialidad`)
@@ -77,17 +78,17 @@ CREATE TABLE IF NOT EXISTS `maquinas` (
   `codigo_interno` VARCHAR(50) NOT NULL UNIQUE,
   `marca` VARCHAR(100) NOT NULL,
   `modelo` VARCHAR(100) NOT NULL,
-  `numero_serie` VARCHAR(100) NOT NULL UNIQUE,
+  `numero_serie` VARCHAR(100) NULL UNIQUE,
   `tipo` ENUM('Inversora', 'Rectificadora', 'Transformador', 'Generador', 'Multi-proceso') NOT NULL,
   `voltaje` VARCHAR(50) NOT NULL,
-  `amperaje` VARCHAR(50) NOT NULL,
+  `amperaje` VARCHAR(150) NOT NULL,
   `potencia` VARCHAR(50) NOT NULL,
   `ubicacion` VARCHAR(150) NOT NULL,
-  `fecha_adquisicion` DATE NOT NULL,
+  `fecha_adquisicion` DATE NULL,
   `proveedor` VARCHAR(150) NOT NULL,
   `estado` ENUM('Disponible', 'Asignada', 'En mantenimiento', 'Fuera de servicio', 'Reparación', 'Baja') NOT NULL DEFAULT 'Disponible',
   `observaciones` TEXT NULL,
-  `fecha_registro` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `fecha_registro` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
   INDEX `idx_maquinas_codigo` (`codigo_interno`),
   INDEX `idx_maquinas_estado` (`estado`),
   INDEX `idx_maquinas_tipo` (`tipo`)
@@ -98,15 +99,17 @@ CREATE TABLE IF NOT EXISTS `maquinas` (
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `asignaciones` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `tecnico_id` INT NOT NULL,
+  `tecnico_id` INT NULL,
+  `proyecto` VARCHAR(255) NULL,
+  `ubicacion` VARCHAR(255) NULL,
   `maquina_id` INT NOT NULL,
-  `fecha_asignacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `fecha_devolucion` DATETIME NULL,
+  `fecha_asignacion` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `fecha_devolucion` DATETIME(3) NULL,
   `motivo` TEXT NOT NULL,
   `estado` ENUM('Activa', 'Finalizada', 'Cancelada') NOT NULL DEFAULT 'Activa',
   `usuario_responsable` VARCHAR(100) NOT NULL,
   `observaciones` TEXT NULL,
-  CONSTRAINT `fk_asignaciones_tecnico` FOREIGN KEY (`tecnico_id`) REFERENCES `tecnicos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_asignaciones_tecnico` FOREIGN KEY (`tecnico_id`) REFERENCES `tecnicos` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `fk_asignaciones_maquina` FOREIGN KEY (`maquina_id`) REFERENCES `maquinas` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   INDEX `idx_asignaciones_estado` (`estado`),
   INDEX `idx_asignaciones_tecnico_maquina` (`tecnico_id`, `maquina_id`)
@@ -125,9 +128,13 @@ CREATE TABLE IF NOT EXISTS `mantenimientos` (
   `costo` DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
   `proveedor` VARCHAR(150) NOT NULL,
   `tecnico_responsable` VARCHAR(150) NOT NULL,
+  `tecnico_id` INT NULL,
+  `usuario_id` INT NULL,
+  FOREIGN KEY (`tecnico_id`) REFERENCES `tecnicos` (`id`) ON DELETE SET NULL,
+  FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL,
   `estado` ENUM('Programado', 'En proceso', 'Finalizado', 'Cancelado') NOT NULL DEFAULT 'Programado',
   `observaciones` TEXT NULL,
-  `fecha_registro` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `fecha_registro` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
   CONSTRAINT `fk_mantenimientos_maquina` FOREIGN KEY (`maquina_id`) REFERENCES `maquinas` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   INDEX `idx_mantenimientos_tipo` (`tipo`),
   INDEX `idx_mantenimientos_estado` (`estado`)
@@ -148,7 +155,7 @@ CREATE TABLE IF NOT EXISTS `contratos_mantenimiento` (
   `condiciones` TEXT NOT NULL,
   `estado` ENUM('Vigente', 'Próximo a vencer', 'Vencido', 'Cancelado') NOT NULL DEFAULT 'Vigente',
   `observaciones` TEXT NULL,
-  `fecha_registro` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `fecha_registro` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
   CONSTRAINT `fk_contratos_maquina` FOREIGN KEY (`maquina_id`) REFERENCES `maquinas` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   INDEX `idx_contratos_numero` (`numero_contrato`),
   INDEX `idx_contratos_estado` (`estado`),
@@ -161,10 +168,12 @@ CREATE TABLE IF NOT EXISTS `contratos_mantenimiento` (
 CREATE TABLE IF NOT EXISTS `historial_maquinas` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `maquina_id` INT NOT NULL,
-  `tipo_evento` ENUM('Asignación', 'Devolución', 'Mantenimiento', 'Cambio de Estado', 'Reparación', 'Movimiento') NOT NULL,
+  `tipo_evento` VARCHAR(100) NOT NULL,
+  `titulo` VARCHAR(255) NULL,
+  `metadata_json` JSON NULL,
   `descripcion` TEXT NOT NULL,
   `usuario_responsable` VARCHAR(100) NOT NULL,
-  `fecha` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `fecha` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
   `observaciones` TEXT NULL,
   CONSTRAINT `fk_historial_maquina` FOREIGN KEY (`maquina_id`) REFERENCES `maquinas` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   INDEX `idx_historial_maquina_id` (`maquina_id`),
@@ -180,7 +189,7 @@ CREATE TABLE IF NOT EXISTS `alertas` (
   `titulo` VARCHAR(150) NOT NULL,
   `mensaje` TEXT NOT NULL,
   `prioridad` ENUM('Información', 'Advertencia', 'Alta', 'Crítica') NOT NULL DEFAULT 'Información',
-  `fecha_generacion` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `fecha_generacion` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
   `leida` TINYINT(1) NOT NULL DEFAULT 0,
   `registro_id` INT NULL,
   `modulo` VARCHAR(50) NULL,
@@ -198,7 +207,7 @@ CREATE TABLE IF NOT EXISTS `bitacora` (
   `accion` VARCHAR(100) NOT NULL,
   `modulo` VARCHAR(50) NOT NULL,
   `registro_id` INT NULL,
-  `fecha` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `fecha` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
   `direccion_ip` VARCHAR(45) NOT NULL,
   `descripcion` TEXT NOT NULL,
   INDEX `idx_bitacora_usuario` (`usuario_id`),
@@ -215,6 +224,9 @@ CREATE TABLE IF NOT EXISTS `reportes` (
   `tipo` VARCHAR(50) NOT NULL,
   `filtro_aplicado` TEXT NULL,
   `usuario_id` INT NOT NULL,
-  `fecha_generacion` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `fecha_generacion` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
   `formato` ENUM('PDF', 'Excel', 'CSV') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS app_lock (id INT PRIMARY KEY) ENGINE=InnoDB;
+INSERT IGNORE INTO app_lock (id) VALUES (1);

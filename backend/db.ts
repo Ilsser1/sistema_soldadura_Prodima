@@ -1,5 +1,5 @@
-import fs from 'fs';
-import path from 'path';
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { verifyPassword } from './passwords.js';
 import { mantenimientosFinalizadosPorMes } from './dashboard.js';
 import {
   Usuario,
@@ -25,7 +25,7 @@ import {
   INITIAL_BITACORA
 } from './seedData.js';
 
-interface DatabaseData {
+export interface DatabaseData {
   usuarios: Usuario[];
   tecnicos: Tecnico[];
   maquinas: Maquina[];
@@ -37,77 +37,13 @@ interface DatabaseData {
   bitacora: BitacoraRegistro[];
 }
 
-const DB_FILE = path.join(process.cwd(), 'backend', 'data', 'db.json');
+export class IndustrialDatabase {
+  constructor(public data: DatabaseData) {}
 
-class IndustrialDatabase {
-  private data: DatabaseData;
-
-  constructor() {
-    this.data = this.loadData();
-    this.ensureDataCoherence();
-    this.ejecutarRevisionAlertas();
-  }
-
-  // REGLAS DE COHERENCIA DEL SISTEMA:
-  // Valida relaciones entre máquinas, mantenimientos y técnicos homologados
-  public ensureDataCoherence() {
-    let modified = false;
-
-    // 1. Homologación de técnicos
-    if (this.data.tecnicos && this.data.tecnicos.length > 0) {
-      this.data.tecnicos.forEach(t => {
-        if (t.homologado === undefined) {
-          t.homologado = true;
-          modified = true;
-        }
-      });
-    }
-
-    if (modified) {
-      this.save();
-    }
-  }
-
-  private loadData(): DatabaseData {
-    try {
-      if (fs.existsSync(DB_FILE)) {
-        const raw = fs.readFileSync(DB_FILE, 'utf-8');
-        return JSON.parse(raw);
-      }
-    } catch (e) {
-      console.error('Error al cargar la base de datos local:', e);
-    }
-
-    const initialData: DatabaseData = {
-      usuarios: [...INITIAL_USUARIOS],
-      tecnicos: [...INITIAL_TECNICOS],
-      maquinas: [...INITIAL_MAQUINAS],
-      asignaciones: [...INITIAL_ASIGNACIONES],
-      mantenimientos: [...INITIAL_MANTENIMIENTOS],
-      contratos: [...INITIAL_CONTRATOS],
-      alertas: [...INITIAL_ALERTAS],
-      historial: [...INITIAL_HISTORIAL],
-      bitacora: [...INITIAL_BITACORA]
-    };
-
-    this.saveDataDirect(initialData);
-    return initialData;
-  }
-
-  private saveDataDirect(dataToSave: DatabaseData) {
-    try {
-      const dir = path.dirname(DB_FILE);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      fs.writeFileSync(DB_FILE, JSON.stringify(dataToSave, null, 2), 'utf-8');
-    } catch (e) {
-      console.error('Error guardando la base de datos local:', e);
-    }
-  }
-
-  public save() {
-    this.saveDataDirect(this.data);
+  public autenticar(username: string, password: unknown): Usuario | undefined {
+    const user = this.data.usuarios.find(u => (u.username.toLowerCase() === username || u.correo.toLowerCase() === username) && u.estado === "Activo");
+    if (!user || !verifyPassword(password, user.password || "")) return undefined;
+    return this.getUsuarioById(user.id);
   }
 
   // BITÁCORA Y TRAZABILIDAD
@@ -136,7 +72,7 @@ class IndustrialDatabase {
       detalles: descripcion
     };
     this.data.bitacora.unshift(registro);
-    this.save();
+
   }
 
   public registrarHistorialMaquina(
@@ -157,7 +93,7 @@ class IndustrialDatabase {
       observaciones: observaciones || ''
     };
     this.data.historial.unshift(reg);
-    this.save();
+
   }
 
   // USUARIOS
@@ -222,7 +158,6 @@ class IndustrialDatabase {
       }
     }
 
-    this.save();
     this.registrarBitacora(1, req_user, 'CREAR_USUARIO', 'Usuarios', newId, usuario_ip, `Usuario '${nuevo.username}' creado con rol ${nuevo.rol}.`);
     
     const { password, ...rest } = nuevo;
@@ -244,7 +179,6 @@ class IndustrialDatabase {
       if (u.estado) this.data.tecnicos[tecIdx].estado = u.estado;
     }
 
-    this.save();
 
     this.registrarBitacora(1, req_user, 'ACTUALIZAR_USUARIO', 'Usuarios', id, usuario_ip, `Usuario ID ${id} actualizado.`);
     const { password, ...rest } = this.data.usuarios[idx];
@@ -265,7 +199,6 @@ class IndustrialDatabase {
       this.data.tecnicos[tecIdx].estado = nuevoEstado;
     }
 
-    this.save();
 
     this.registrarBitacora(1, req_user, 'CAMBIAR_ESTADO_USUARIO', 'Usuarios', id, usuario_ip, `Cambió estado de usuario '${actual.username}' a ${nuevoEstado}.`);
     const { password, ...rest } = this.data.usuarios[idx];
@@ -356,7 +289,7 @@ class IndustrialDatabase {
       homologado: t.homologado !== undefined ? t.homologado : true
     };
     this.data.tecnicos.push(nuevo);
-    this.save();
+
 
     this.registrarBitacora(1, req_user, 'CREAR_TECNICO', 'Técnicos', newId, usuario_ip, `Registrado técnico ${nuevo.nombre} ${nuevo.apellido} (DPI: ${nuevo.DPI}) con usuario de acceso asignado.`);
     return this.getTecnicoById(newId) || nuevo;
@@ -410,7 +343,7 @@ class IndustrialDatabase {
     }
 
     this.data.tecnicos[idx] = { ...this.data.tecnicos[idx], ...t };
-    this.save();
+
 
     this.registrarBitacora(1, req_user, 'ACTUALIZAR_TECNICO', 'Técnicos', id, usuario_ip, `Actualizada información del técnico ID ${id}.`);
     return this.getTecnicoById(id) || this.data.tecnicos[idx];
@@ -451,8 +384,10 @@ class IndustrialDatabase {
       }
     });
 
+    this.data.asignaciones.forEach(a => { if (a.tecnico_id === id) a.tecnico_id = null; });
+    this.data.mantenimientos.forEach(m => { if (m.usuario_id === tec.usuario_id) m.usuario_id = undefined; });
     this.data.tecnicos.splice(idx, 1);
-    this.save();
+
 
     this.registrarBitacora(1, req_user, 'ELIMINAR_TECNICO', 'Técnicos', id, usuario_ip, `Eliminado permanentemente el técnico ${tec.nombre} ${tec.apellido} (ID ${id}).`);
     return { mensaje: `Técnico ${tec.nombre} ${tec.apellido} eliminado correctamente.`, id };
@@ -504,7 +439,7 @@ class IndustrialDatabase {
     };
 
     this.data.maquinas.push(nueva);
-    this.save();
+
 
     this.registrarBitacora(1, req_user, 'CREAR_MAQUINA', 'Máquinas', newId, usuario_ip, `Registrada nueva máquina de soldar ${nueva.codigo_interno} (${nueva.marca} ${nueva.modelo}).`);
     this.registrarHistorialMaquina(newId, 'Cambio de Estado', `Registro inicial de máquina en catálogo. Estado: ${nueva.estado}`, req_user);
@@ -521,7 +456,7 @@ class IndustrialDatabase {
 
     this.data.maquinas[idx] = { ...previo, ...m };
     const actualizada = this.data.maquinas[idx];
-    this.save();
+
 
     if (m.estado && m.estado !== estadoAnterior) {
       this.registrarHistorialMaquina(id, 'Cambio de Estado', `Estado modificado de '${estadoAnterior}' a '${m.estado}'`, req_user);
@@ -547,7 +482,7 @@ class IndustrialDatabase {
     this.data.historial = this.data.historial.filter(h => h.maquina_id !== id);
 
     this.data.maquinas.splice(idx, 1);
-    this.save();
+
 
     this.registrarBitacora(1, req_user, 'ELIMINAR_MAQUINA', 'Máquinas', id, usuario_ip, `Eliminada máquina de soldar ${maq.codigo_interno} (${maq.marca} ${maq.modelo}).`);
     return { mensaje: `Máquina ${maq.codigo_interno} eliminada correctamente.`, id };
@@ -565,22 +500,8 @@ class IndustrialDatabase {
 
     // Mantener sólo el usuario Administrador
     this.data.usuarios = this.data.usuarios.filter(u => u.rol === 'Administrador');
-    if (this.data.usuarios.length === 0) {
-      this.data.usuarios = [{
-        id: 1,
-        nombre: 'Admin',
-        apellido: 'PRODIMA',
-        correo: 'admin@prodima.gt',
-        username: 'admin',
-        rol: 'Administrador',
-        estado: 'Activo',
-        fecha_creacion: '2025-01-10T08:00:00Z',
-        ultimo_acceso: new Date().toISOString(),
-        password: 'password123'
-      } as any];
-    }
+    if (this.data.usuarios.length === 0) throw new Error("No hay administrador para conservar.");
 
-    this.save();
     return { mensaje: 'Catálogo limpiado exitosamente. La base de datos está lista para ingresar nuevos técnicos y máquinas.' };
   }
 
@@ -592,7 +513,7 @@ class IndustrialDatabase {
     this.data.contratos = [...INITIAL_CONTRATOS];
     this.data.alertas = [...INITIAL_ALERTAS];
     this.data.historial = [...INITIAL_HISTORIAL];
-    this.save();
+
     this.registrarBitacora(1, req_user, 'RESTABLECER_EJEMPLOS', 'Sistema', null, usuario_ip, 'Datos de ejemplo restablecidos.');
     return { mensaje: 'Datos de ejemplo restablecidos exitosamente.' };
   }
@@ -672,7 +593,6 @@ class IndustrialDatabase {
       mant.tecnico_responsable = `${tecnico.nombre} ${tecnico.apellido}`;
     }
 
-    this.save();
 
     // Registrar en Historial y Bitácora
     this.registrarHistorialMaquina(
@@ -723,7 +643,6 @@ class IndustrialDatabase {
       mantEnProceso.observaciones = (mantEnProceso.observaciones || '') + ' | Mantenimiento completado y finalizado al recibir la devolución del equipo.';
     }
 
-    this.save();
 
     const tec = this.data.tecnicos.find(t => t.id === asig.tecnico_id);
     const tecNombre = tec ? `${tec.nombre} ${tec.apellido}` : 'Técnico';
@@ -880,7 +799,6 @@ class IndustrialDatabase {
       }
     }
 
-    this.save();
 
     // 3. ACTUALIZAR HISTORIAL DE LA MÁQUINA EN CONSECUENCIA
     this.registrarHistorialMaquina(
@@ -922,7 +840,6 @@ class IndustrialDatabase {
       }
     }
 
-    this.save();
 
     this.registrarHistorialMaquina(
       actualizado.maquina_id,
@@ -961,7 +878,6 @@ class IndustrialDatabase {
       }
     }
 
-    this.save();
     this.registrarBitacora(1, req_user, 'ELIMINAR_MANTENIMIENTO', 'Mantenimientos', id, usuario_ip, `Mantenimiento ID ${id} cancelado/eliminado.`);
     return true;
   }
@@ -1026,7 +942,7 @@ class IndustrialDatabase {
     };
 
     this.data.contratos.push(nuevo);
-    this.save();
+
 
     this.ejecutarRevisionAlertas();
     this.registrarBitacora(1, req_user, 'CREAR_CONTRATO', 'Contratos', newId, usuario_ip, `Nuevo contrato de mantenimiento ${nuevo.numero_contrato} registrado.`);
@@ -1038,7 +954,7 @@ class IndustrialDatabase {
     if (idx === -1) throw new Error('Contrato no encontrado');
 
     this.data.contratos[idx] = { ...this.data.contratos[idx], ...c };
-    this.save();
+
 
     this.ejecutarRevisionAlertas();
     this.registrarBitacora(1, req_user, 'ACTUALIZAR_CONTRATO', 'Contratos', id, usuario_ip, `Contrato ID ${id} actualizado.`);
@@ -1121,7 +1037,7 @@ class IndustrialDatabase {
     }
 
     if (alertasGeneradas > 0) {
-      this.save();
+
     }
 
     return alertasGeneradas;
@@ -1139,7 +1055,7 @@ class IndustrialDatabase {
     if (idx === -1) throw new Error('Alerta no encontrada');
 
     this.data.alertas[idx].leida = true;
-    this.save();
+
     return this.data.alertas[idx];
   }
 
@@ -1151,7 +1067,7 @@ class IndustrialDatabase {
         count++;
       }
     });
-    this.save();
+
     return { modificadas: count };
   }
 
@@ -1160,7 +1076,7 @@ class IndustrialDatabase {
     if (idx === -1) return false;
 
     this.data.alertas.splice(idx, 1);
-    this.save();
+
     return true;
   }
 
@@ -1171,7 +1087,7 @@ class IndustrialDatabase {
     } else {
       this.data.alertas = [];
     }
-    this.save();
+
     return { eliminadas: totalInicial - this.data.alertas.length };
   }
 
@@ -1268,4 +1184,12 @@ class IndustrialDatabase {
   }
 }
 
-export const db = new IndustrialDatabase();
+export const dbContext = new AsyncLocalStorage<IndustrialDatabase>();
+export const db = new Proxy({} as IndustrialDatabase, {
+  get(_target, property) {
+    const current = dbContext.getStore();
+    if (!current) throw new Error("La operación requiere una transacción MySQL.");
+    const value = current[property];
+    return typeof value === "function" ? value.bind(current) : value;
+  }
+});

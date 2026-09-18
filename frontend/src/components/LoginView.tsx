@@ -103,7 +103,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, loading = false }
             </div>
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/15 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 text-xs font-bold mb-2 border border-amber-500/30">
               <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-              <span>Acceso al Sistema ERP PRODIMA</span>
+              <span>Acceso a PRODIMA</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
               Iniciar Sesión
@@ -185,7 +185,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, loading = false }
                   <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
                   <span>Validando permisos en servidor...</span>
                 </>
-              ) : (
+               ) : (
                 <>
                   <span>Iniciar Sesión</span>
                   <ArrowRight className="w-4 h-4 stroke-[2.5]" />
