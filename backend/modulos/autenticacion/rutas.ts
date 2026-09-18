@@ -1,3 +1,4 @@
+import { createSession, sessionUserId, revokeSession } from './sesiones.js';
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { db } from '../../database/operaciones.js';
@@ -18,24 +19,28 @@ router.post('/api/auth/login', withDatabase((req: Request, res: Response) => {
     db.registrarBitacora(usuario.id, `${usuario.nombre} ${usuario.apellido} (${usuario.username})`, 'LOGIN', 'Autenticación', null, getClientIp(req), `Inicio de sesión exitoso con rol ${usuario.rol}.`);
 
     return res.json({
-      token: `jwt_token_simulado_${usuario.id}_${Date.now()}`,
+      token: createSession(usuario.id),
       user: usuario,
       usuario
     });
   }));
 
-router.post('/api/auth/refresh', withDatabase((_req: Request, res: Response) => {
-    return res.json({ status: 'ok', token: `jwt_refreshed_${Date.now()}` });
+router.post('/api/auth/refresh', withDatabase((req: Request, res: Response) => {
+    const id = sessionUserId(req)!;
+    revokeSession(req);
+    return res.json({ status: 'ok', token: createSession(id) });
   }));
 
 router.post('/api/auth/logout', withDatabase((req: Request, res: Response) => {
     const user = getReqUser(req);
-    db.registrarBitacora(1, user, 'LOGOUT', 'Autenticación', null, getClientIp(req), 'Cierre de sesión del usuario.');
+    const id = sessionUserId(req)!;
+    revokeSession(req);
+    db.registrarBitacora(id, user, 'LOGOUT', 'Autenticación', null, getClientIp(req), 'Cierre de sesión del usuario.');
     return res.json({ status: 'logged_out' });
   }));
 
-router.get('/api/auth/me', withDatabase((_req: Request, res: Response) => {
-    const user = db.getUsuarioById(1);
+router.get('/api/auth/me', withDatabase((req: Request, res: Response) => {
+    const user = db.getUsuarioById(sessionUserId(req)!);
     return res.json(user);
   }));
 

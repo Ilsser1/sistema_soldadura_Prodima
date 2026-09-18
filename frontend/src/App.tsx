@@ -35,7 +35,7 @@ import { LoginModal } from './modulos/autenticacion/LoginModal';
 export function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     const saved = localStorage.getItem('prodima_auth_user');
-    return !!saved;
+    return !!saved && !!localStorage.getItem('prodima_auth_token');
   });
 
   const [currentUser, setCurrentUser] = useState<Usuario>(() => {
@@ -75,6 +75,7 @@ export function App() {
   const [loadingHistorial, setLoadingHistorial] = useState(false);
 
   const reloadData = async () => {
+    const requestToken = localStorage.getItem('prodima_auth_token');
     try {
       setLoading(true);
       const [
@@ -99,6 +100,7 @@ export function App() {
         api.getBitacora()
       ]);
 
+      if (requestToken !== localStorage.getItem('prodima_auth_token')) return;
       setStats(st);
       setUsuarios(uList);
       setTecnicos(tList);
@@ -116,7 +118,11 @@ export function App() {
   };
 
   useEffect(() => {
-    reloadData();
+    const expire = () => { setIsAuthenticated(false); setHistorialData(null); };
+    window.addEventListener('session-expired', expire);
+    if (localStorage.getItem('prodima_auth_token')) reloadData();
+    else setLoading(false);
+    return () => window.removeEventListener('session-expired', expire);
   }, []);
 
   useEffect(() => {
@@ -134,6 +140,11 @@ export function App() {
       const response = await api.login(usr, pass);
       const user = response.user || (response as any).usuario;
       if (user) {
+        localStorage.setItem('prodima_auth_token', response.token);
+        setStats(null); setUsuarios([]); setTecnicos([]); setMaquinas([]);
+        setAsignaciones([]); setMantenimientos([]); setContratos([]); setAlertas([]); setBitacora([]);
+        setSelectedHistoryMachineId(null);
+        setHistorialData(null);
         setCurrentUser(user);
         setIsAuthenticated(true);
         localStorage.setItem('prodima_auth_user', JSON.stringify(user));
@@ -143,30 +154,18 @@ export function App() {
         await reloadData();
         return;
       }
-    } catch (err: any) {
-      const predefined: Record<string, Usuario> = {
-        admin: { id: 1, nombre: 'Admin', apellido: 'PRODIMA', correo: 'admin@prodima.gt', username: 'admin', rol: 'Administrador', estado: 'Activo', fecha_creacion: '2025-01-10' }
-      };
-      const clean = (usr || '').toLowerCase().trim();
-      const matched = predefined[clean] || Object.values(predefined).find(u => u.correo.toLowerCase() === clean);
-      if (matched) {
-        setCurrentUser(matched);
-        setIsAuthenticated(true);
-        localStorage.setItem('prodima_auth_user', JSON.stringify(matched));
-        localStorage.setItem('active_role', matched.rol);
-        localStorage.setItem('active_username', matched.username);
-        setIsLoginModalOpen(false);
-        await reloadData();
-        return;
-      }
+    } catch (err) {
       throw err;
     }
   };
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+      await fetch('/api/auth/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + (localStorage.getItem('prodima_auth_token') || '') } }).catch(() => {});
     } catch {}
+    localStorage.removeItem('prodima_auth_token');
+    setSelectedHistoryMachineId(null);
+    setHistorialData(null);
     localStorage.removeItem('prodima_auth_user');
     localStorage.removeItem('active_role');
     localStorage.removeItem('active_username');
@@ -389,60 +388,13 @@ export function App() {
 
   const isTechnician = currentUser.rol === 'Técnico';
 
-  const currentTecnico = tecnicos.find(
-    t => (t.usuario_id && t.usuario_id === currentUser.id) ||
-         (t.correo && currentUser.correo && t.correo.toLowerCase() === currentUser.correo.toLowerCase()) ||
-         (t.nombre && currentUser.nombre && t.nombre.toLowerCase() === currentUser.nombre.toLowerCase())
-  );
-
-  const scopedAsignaciones = isTechnician
-    ? asignaciones.filter(
-        a => (currentTecnico && a.tecnico_id === currentTecnico.id) ||
-             (a.tecnico_nombre && currentUser.nombre && a.tecnico_nombre.toLowerCase().includes(currentUser.nombre.toLowerCase()))
-      )
-    : asignaciones;
-
-  const scopedMantenimientos = isTechnician
-    ? mantenimientos.filter(
-        m => (currentTecnico && m.tecnico_id === currentTecnico.id) ||
-             (m.tecnico_responsable && currentUser.nombre && m.tecnico_responsable.toLowerCase().includes(currentUser.nombre.toLowerCase())) ||
-             (m.tecnico_responsable && currentUser.correo && m.tecnico_responsable.toLowerCase().includes(currentUser.correo.toLowerCase()))
-      )
-    : mantenimientos;
-
-  const myMachineIds = isTechnician
-    ? new Set([
-        ...scopedAsignaciones.map(a => a.maquina_id),
-        ...scopedMantenimientos.map(m => m.maquina_id)
-      ])
-    : new Set<number>();
-
-  const scopedMaquinas = isTechnician
-    ? maquinas.filter(m => myMachineIds.has(m.id))
-    : maquinas;
-
-  const scopedTecnicos = isTechnician
-    ? tecnicos.filter(
-        t => (currentTecnico && t.id === currentTecnico.id) ||
-             (currentUser.correo && t.correo.toLowerCase() === currentUser.correo.toLowerCase()) ||
-             (currentUser.nombre && t.nombre.toLowerCase() === currentUser.nombre.toLowerCase())
-      )
-    : tecnicos;
-
-  const scopedContratos = isTechnician
-    ? contratos.filter(c => myMachineIds.has(c.maquina_id))
-    : contratos;
-
-  const scopedAlertas = isTechnician
-    ? alertas.filter(a => {
-        const text = `${a.titulo} ${a.mensaje}`.toLowerCase();
-        const machineCodes = scopedMaquinas.map(m => (m.codigo_interno || '').toLowerCase()).filter(Boolean);
-        const matchesMachine = machineCodes.some(code => text.includes(code));
-        const matchesName = currentUser.nombre && text.includes(currentUser.nombre.toLowerCase());
-        const matchesMaint = scopedMantenimientos.some(m => m.maquina_codigo && text.includes(m.maquina_codigo.toLowerCase()));
-        return matchesMachine || matchesName || matchesMaint;
-      })
-    : alertas;
+  // The API derives visibility from the authenticated user and exact database IDs.
+  const scopedAsignaciones = asignaciones;
+  const scopedMantenimientos = mantenimientos;
+  const scopedMaquinas = maquinas;
+  const scopedTecnicos = tecnicos;
+  const scopedContratos = contratos;
+  const scopedAlertas = alertas;
 
   const unreadAlertsCount = (scopedAlertas || []).filter(a => !a.leida).length;
 

@@ -70,12 +70,12 @@ test('la API no responde éxito antes de que MySQL confirme; revierte respuestas
   await withDatabase((_req, res) => {
     db.registrarBitacora(1, 'admin', 'TEST', 'Sistema', null, '127.0.0.1', 'prueba');
     res.json({ok:true});
-  })({} as any, response as any, () => {});
+  })({ path: '/api/auth/login', headers: {} } as any, response as any, () => {});
   assert.deepEqual(events, ['write','commit','response']);
   events.length = 0;
   await withDatabase((_req, res) => {
     db.registrarBitacora(1, 'admin', 'TEST', 'Sistema', null, '127.0.0.1', 'prueba');
     res.status(400).json({error:'rechazado'});
-  })({} as any, response as any, () => {});
+  })({ path: '/api/auth/login', headers: {} } as any, response as any, () => {});
   assert.deepEqual(events, ['rollback','response']);
 });

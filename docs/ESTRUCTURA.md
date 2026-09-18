@@ -41,3 +41,9 @@ npm.cmd run build
 ```
 
 Para configurar la base de datos, consulta [la gu?a MySQL](MYSQL.md).
+
+## Acceso de tecnicos
+
+El servidor vincula el usuario autenticado con tecnicos.usuario_id. No utiliza coincidencias de nombre o correo. Los tecnicos consultan sus asignaciones y las maquinas con asignacion activa; las alertas se seleccionan por modulo y registro_id. Sin vinculo, las listas quedan vacias. Los reportes y el dashboard usan el mismo alcance. Las operaciones administrativas quedan reservadas a Administrador y Supervisor; el tecnico puede leer y limpiar sus alertas.
+
+Las sesiones duran ocho horas y se guardan en memoria del servidor: reiniciar el servidor requiere iniciar sesion nuevamente. Esta modalidad requiere una sola instancia; antes de desplegar varias replicas se debe implementar almacenamiento compartido de sesiones.
