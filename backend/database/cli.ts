@@ -2,9 +2,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import mysql from 'mysql2/promise';
-import type { DatabaseData } from '../db.js';
-import { connectionOptions, databaseName, pool, collectionNames, tables, emptyData, readData, persistData, toSqlValue } from '../mysql.js';
-import { verifyPassword } from '../passwords.js';
+import type { DatabaseData } from './operaciones.js';
+import { connectionOptions, databaseName, pool, collectionNames, tables, emptyData, readData, persistData, toSqlValue } from './conexion.js';
+import { verifyPassword } from '../modulos/autenticacion/passwords.js';
 
 const sourcePath = path.resolve('backend/data/db.json');
 const ignored: Record<string, string[]> = {

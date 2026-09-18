@@ -1,0 +1,31 @@
+import { Router } from 'express';
+import sistema from './sistema/rutas.js';
+import autenticacion from './autenticacion/rutas.js';
+import usuarios from './usuarios/rutas.js';
+import tecnicos from './tecnicos/rutas.js';
+import maquinas from './maquinas/rutas.js';
+import asignaciones from './asignaciones/rutas.js';
+import mantenimientos from './mantenimientos/rutas.js';
+import contratos from './contratos/rutas.js';
+import alertas from './alertas/rutas.js';
+import historial from './historial/rutas.js';
+import bitacora from './bitacora/rutas.js';
+import dashboard from './dashboard/rutas.js';
+import reportes from './reportes/rutas.js';
+
+const rutas = Router();
+rutas.use(sistema);
+rutas.use(autenticacion);
+rutas.use(usuarios);
+rutas.use(tecnicos);
+rutas.use(maquinas);
+rutas.use(asignaciones);
+rutas.use(mantenimientos);
+rutas.use(contratos);
+rutas.use(alertas);
+rutas.use(historial);
+rutas.use(bitacora);
+rutas.use(dashboard);
+rutas.use(reportes);
+
+export default rutas;

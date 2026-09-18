@@ -16,21 +16,21 @@ import { api } from './services/api';
 import { Navbar } from './components/Navbar';
 import { Sidebar, TabType } from './components/Sidebar';
 
-import { DashboardView } from './components/DashboardView';
-import { UsuariosView } from './components/UsuariosView';
-import { TecnicosView } from './components/TecnicosView';
-import { MaquinasView } from './components/MaquinasView';
-import { AsignacionesView } from './components/AsignacionesView';
-import { MantenimientosView } from './components/MantenimientosView';
-import { ContratosView } from './components/ContratosView';
-import { AlertasView } from './components/AlertasView';
-import { HistorialView } from './components/HistorialView';
-import { BitacoraView } from './components/BitacoraView';
-import { ReportesView } from './components/ReportesView';
-import { PerfilView } from './components/PerfilView';
+import { DashboardView } from './modulos/dashboard/DashboardView';
+import { UsuariosView } from './modulos/usuarios/UsuariosView';
+import { TecnicosView } from './modulos/tecnicos/TecnicosView';
+import { MaquinasView } from './modulos/maquinas/MaquinasView';
+import { AsignacionesView } from './modulos/asignaciones/AsignacionesView';
+import { MantenimientosView } from './modulos/mantenimientos/MantenimientosView';
+import { ContratosView } from './modulos/contratos/ContratosView';
+import { AlertasView } from './modulos/alertas/AlertasView';
+import { HistorialView } from './modulos/historial/HistorialView';
+import { BitacoraView } from './modulos/bitacora/BitacoraView';
+import { ReportesView } from './modulos/reportes/ReportesView';
+import { PerfilView } from './modulos/perfil/PerfilView';
 import { MobileBottomNav } from './components/MobileBottomNav';
-import { LoginView } from './components/LoginView';
-import { LoginModal } from './components/LoginModal';
+import { LoginView } from './modulos/autenticacion/LoginView';
+import { LoginModal } from './modulos/autenticacion/LoginModal';
 
 export function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -192,10 +192,6 @@ export function App() {
     }
   };
 
-  const handleResetPasswordUsuario = async (id: number) => {
-    await api.actualizarUsuario(id, { password: 'NewPassword2026!' });
-    await reloadData();
-  };
 
   const handleCrearTecnico = async (t: Partial<Tecnico> & { crear_usuario?: boolean; username?: string; password?: string }) => {
     await api.crearTecnico(t);
@@ -222,10 +218,6 @@ export function App() {
     await reloadData();
   };
 
-  const handleRestablecerEjemplos = async () => {
-    await api.restablecerDatosEjemplo();
-    await reloadData();
-  };
 
   const handleCrearMaquina = async (m: Partial<Maquina>) => {
     await api.crearMaquina(m);
@@ -523,7 +515,6 @@ export function App() {
                   stats={stats}
                   alertas={scopedAlertas}
                   currentUser={currentUser}
-                  maquinas={scopedMaquinas}
                   asignaciones={scopedAsignaciones}
                   mantenimientos={scopedMantenimientos}
                   onNavigate={setActiveTab}
@@ -537,7 +528,6 @@ export function App() {
                   onCrear={handleCrearUsuario}
                   onActualizar={handleActualizarUsuario}
                   onToggleEstado={handleToggleEstadoUsuario}
-                  onResetPassword={handleResetPasswordUsuario}
                   currentRole={currentUser.rol}
                 />
               )}
@@ -551,7 +541,6 @@ export function App() {
                   onDesactivar={handleDesactivarTecnico}
                   onEliminar={handleEliminarTecnico}
                   onLimpiarTodo={handleLimpiarTodo}
-                  onRestablecerEjemplos={handleRestablecerEjemplos}
                   isReadOnly={false}
                 />
               )}
