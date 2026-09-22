@@ -1,38 +1,9 @@
--- ============================================================
--- BASE DE DATOS: gestion_tecnicos_soldadura
--- Motor: MySQL 8.0+
--- Tesis / Sistema de Gestión de Técnicos y Máquinas de Soldar
--- ============================================================
-
 CREATE DATABASE IF NOT EXISTS `gestion_tecnicos_soldadura` 
 CHARACTER SET utf8mb4 
 COLLATE utf8mb4_unicode_ci;
 
 USE `gestion_tecnicos_soldadura`;
 
--- ------------------------------------------------------------
--- Tabla 1: ROLES
--- ------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `roles` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `nombre` VARCHAR(50) NOT NULL UNIQUE,
-  `descripcion` VARCHAR(255) NULL,
-  `fecha_creacion` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ------------------------------------------------------------
--- Tabla 2: PERMISOS
--- ------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `permisos` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `nombre` VARCHAR(100) NOT NULL UNIQUE,
-  `modulo` VARCHAR(50) NOT NULL,
-  `descripcion` VARCHAR(255) NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ------------------------------------------------------------
--- Tabla 3: USUARIOS
--- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `usuarios` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `nombre` VARCHAR(100) NOT NULL,
@@ -44,14 +15,9 @@ CREATE TABLE IF NOT EXISTS `usuarios` (
   `estado` ENUM('Activo', 'Inactivo') NOT NULL DEFAULT 'Activo',
   `fecha_creacion` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
   `ultimo_acceso` DATETIME(3) NULL,
-  INDEX `idx_usuarios_username` (`username`),
-  INDEX `idx_usuarios_correo` (`correo`),
   INDEX `idx_usuarios_rol` (`rol`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ------------------------------------------------------------
--- Tabla 4: TÉCNICOS
--- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tecnicos` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `nombre` VARCHAR(100) NOT NULL,
@@ -66,13 +32,9 @@ CREATE TABLE IF NOT EXISTS `tecnicos` (
   `usuario_id` INT NULL UNIQUE,
   `homologado` BOOLEAN NOT NULL DEFAULT TRUE,
   CONSTRAINT `fk_tecnicos_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  INDEX `idx_tecnicos_dpi` (`DPI`),
   INDEX `idx_tecnicos_especialidad` (`especialidad`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ------------------------------------------------------------
--- Tabla 5: MÁQUINAS DE SOLDAR
--- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `maquinas` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `codigo_interno` VARCHAR(50) NOT NULL UNIQUE,
@@ -88,15 +50,10 @@ CREATE TABLE IF NOT EXISTS `maquinas` (
   `proveedor` VARCHAR(150) NOT NULL,
   `estado` ENUM('Disponible', 'Asignada', 'En mantenimiento', 'Fuera de servicio', 'Reparación', 'Baja') NOT NULL DEFAULT 'Disponible',
   `observaciones` TEXT NULL,
-  `fecha_registro` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
-  INDEX `idx_maquinas_codigo` (`codigo_interno`),
   INDEX `idx_maquinas_estado` (`estado`),
   INDEX `idx_maquinas_tipo` (`tipo`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ------------------------------------------------------------
--- Tabla 6: ASIGNACIONES DE MÁQUINAS A TÉCNICOS
--- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `asignaciones` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `tecnico_id` INT NULL,
@@ -115,9 +72,6 @@ CREATE TABLE IF NOT EXISTS `asignaciones` (
   INDEX `idx_asignaciones_tecnico_maquina` (`tecnico_id`, `maquina_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ------------------------------------------------------------
--- Tabla 7: MANTENIMIENTOS
--- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `mantenimientos` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `maquina_id` INT NOT NULL,
@@ -134,15 +88,11 @@ CREATE TABLE IF NOT EXISTS `mantenimientos` (
   FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL,
   `estado` ENUM('Programado', 'En proceso', 'Finalizado', 'Cancelado') NOT NULL DEFAULT 'Programado',
   `observaciones` TEXT NULL,
-  `fecha_registro` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
   CONSTRAINT `fk_mantenimientos_maquina` FOREIGN KEY (`maquina_id`) REFERENCES `maquinas` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   INDEX `idx_mantenimientos_tipo` (`tipo`),
   INDEX `idx_mantenimientos_estado` (`estado`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ------------------------------------------------------------
--- Tabla 8: CONTRATOS DE MANTENIMIENTO
--- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `contratos_mantenimiento` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `maquina_id` INT NOT NULL,
@@ -155,16 +105,11 @@ CREATE TABLE IF NOT EXISTS `contratos_mantenimiento` (
   `condiciones` TEXT NOT NULL,
   `estado` ENUM('Vigente', 'Próximo a vencer', 'Vencido', 'Cancelado') NOT NULL DEFAULT 'Vigente',
   `observaciones` TEXT NULL,
-  `fecha_registro` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
   CONSTRAINT `fk_contratos_maquina` FOREIGN KEY (`maquina_id`) REFERENCES `maquinas` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  INDEX `idx_contratos_numero` (`numero_contrato`),
   INDEX `idx_contratos_estado` (`estado`),
   INDEX `idx_contratos_fechas` (`fecha_fin`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ------------------------------------------------------------
--- Tabla 9: HISTORIAL DE MÁQUINAS (TRAZABILIDAD COMPLETA)
--- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `historial_maquinas` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `maquina_id` INT NOT NULL,
@@ -180,9 +125,6 @@ CREATE TABLE IF NOT EXISTS `historial_maquinas` (
   INDEX `idx_historial_fecha` (`fecha`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ------------------------------------------------------------
--- Tabla 10: ALERTAS AUTOMÁTICAS
--- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `alertas` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `tipo` VARCHAR(100) NOT NULL,
@@ -197,9 +139,6 @@ CREATE TABLE IF NOT EXISTS `alertas` (
   INDEX `idx_alertas_prioridad` (`prioridad`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ------------------------------------------------------------
--- Tabla 11: BITÁCORA DEL SISTEMA (AUDITORÍA SEGURA)
--- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `bitacora` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `usuario_id` INT NOT NULL,
@@ -213,19 +152,6 @@ CREATE TABLE IF NOT EXISTS `bitacora` (
   INDEX `idx_bitacora_usuario` (`usuario_id`),
   INDEX `idx_bitacora_modulo` (`modulo`),
   INDEX `idx_bitacora_fecha` (`fecha`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ------------------------------------------------------------
--- Tabla 12: REPORTES GENERADOS (HISTÓRICO)
--- ------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `reportes` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `nombre` VARCHAR(150) NOT NULL,
-  `tipo` VARCHAR(50) NOT NULL,
-  `filtro_aplicado` TEXT NULL,
-  `usuario_id` INT NOT NULL,
-  `fecha_generacion` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
-  `formato` ENUM('PDF', 'Excel', 'CSV') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS app_lock (id INT PRIMARY KEY) ENGINE=InnoDB;

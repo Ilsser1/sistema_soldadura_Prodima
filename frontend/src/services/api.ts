@@ -9,7 +9,6 @@ import { contratosApi } from '../modulos/contratos/api';
 import { alertasApi } from '../modulos/alertas/api';
 import { historialApi } from '../modulos/historial/api';
 import { bitacoraApi } from '../modulos/bitacora/api';
-import { reportesApi } from '../modulos/reportes/api';
 import { sistemaApi } from '../modulos/sistema/api';
 
 export const api = {
@@ -24,6 +23,5 @@ export const api = {
   ...alertasApi,
   ...historialApi,
   ...bitacoraApi,
-  ...reportesApi,
   ...sistemaApi,
 };

@@ -50,4 +50,10 @@ Las pruebas unitarias cubren conversión, contraseñas y transacciones simuladas
 
 Para conservar las reglas de negocio existentes, cada petición carga los registros dentro de una transacción y bloquea una fila de coordinación. Es adecuado para este sistema pequeño; antes de escalar se deben sustituir estas lecturas por consultas específicas.
 
-El login ahora comprueba la contraseña, pero la autenticación y autorización del resto de las rutas siguen siendo las de la aplicación anterior. Esta migración de persistencia no implementa sesiones seguras ni permisos completos del servidor.
+La autenticación utiliza sesiones en memoria y las rutas aplican permisos por rol y alcance del técnico. Consulta las condiciones de despliegue en el [README](../README.md).
+
+## Esquema mínimo
+
+El esquema contiene las nueve tablas usadas por la aplicación y `app_lock`, necesaria para coordinar las transacciones. Los roles se guardan en `usuarios.rol`; los permisos se resuelven en el servidor y los reportes se generan desde los datos existentes. No se necesitan tablas independientes de roles, permisos ni reportes.
+
+Se eliminaron del esquema los índices duplicados de campos `UNIQUE` y las columnas `fecha_registro` que la aplicación no consulta. Estos cambios se aplican a bases nuevas: `db:init` no elimina tablas, columnas ni registros de bases existentes.
