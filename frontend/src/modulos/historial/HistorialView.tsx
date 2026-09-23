@@ -202,9 +202,9 @@ export const HistorialView: React.FC<HistorialViewProps> = ({
                     <div className="bg-slate-800/30 p-3 rounded-xl border border-slate-800 text-xs space-y-0.5">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-purple-400">{b.accion}: {b.modulo}</span>
-                        <span className="text-[10px] text-slate-500">{b.fecha_hora ? new Date(b.fecha_hora).toLocaleString() : (b.fecha || '')}</span>
+                        <span className="text-[10px] text-slate-500">{b.fecha ? new Date(b.fecha).toLocaleString() : (b.fecha || '')}</span>
                       </div>
-                      <p className="text-slate-400 text-[11px]">{b.detalles || b.descripcion}</p>
+                      <p className="text-slate-400 text-[11px]">{b.descripcion}</p>
                       <span className="text-[10px] text-slate-500 block">Por usuario: {b.usuario_nombre}</span>
                     </div>
                   </div>

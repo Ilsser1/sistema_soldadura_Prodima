@@ -11,7 +11,6 @@ import alertas from './alertas/rutas.js';
 import historial from './historial/rutas.js';
 import bitacora from './bitacora/rutas.js';
 import dashboard from './dashboard/rutas.js';
-import reportes from './reportes/rutas.js';
 
 const rutas = Router();
 rutas.use(sistema);
@@ -26,6 +25,5 @@ rutas.use(alertas);
 rutas.use(historial);
 rutas.use(bitacora);
 rutas.use(dashboard);
-rutas.use(reportes);
 
 export default rutas;

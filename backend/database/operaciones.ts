@@ -54,11 +54,8 @@ export class IndustrialDatabase {
       modulo,
       registro_id,
       fecha: new Date().toISOString(),
-      fecha_hora: new Date().toISOString(),
       direccion_ip: ip || '127.0.0.1',
-      ip_address: ip || '127.0.0.1',
-      descripcion,
-      detalles: descripcion
+      descripcion
     };
     this.data.bitacora.unshift(registro);
 
@@ -659,7 +656,7 @@ export class IndustrialDatabase {
     const newId = this.data.mantenimientos.length > 0 ? Math.max(...this.data.mantenimientos.map(x => x.id)) + 1 : 1;
     
     // 1. VALIDACIÓN AUTOMÁTICA DE CONTRATO DE MANTENIMIENTO ACTIVO
-    const contratoActivo = this.data.contratos.find(
+    const contratoActivo = this.getContratos().find(
       c => c.maquina_id === m.maquina_id && ['Vigente', 'Próximo a vencer'].includes(c.estado)
     );
 
@@ -1010,10 +1007,6 @@ export class IndustrialDatabase {
           alertasGeneradas++;
         }
       }
-    }
-
-    if (alertasGeneradas > 0) {
-
     }
 
     return alertasGeneradas;

@@ -335,12 +335,12 @@ export function exportReportToPDF({
 
     const tableData = bitacora.slice(0, 100).map(b => [
       `#${b.id}`,
-      b.fecha_hora ? new Date(b.fecha_hora).toLocaleString() : (b.fecha || 'N/D'),
+      b.fecha ? new Date(b.fecha).toLocaleString() : (b.fecha || 'N/D'),
       b.usuario_nombre,
       b.modulo,
       b.accion,
-      b.detalles || b.descripcion || 'Evento auditado',
-      b.ip_address || b.direccion_ip || '127.0.0.1'
+      b.descripcion || 'Evento auditado',
+      b.direccion_ip || '127.0.0.1'
     ]);
 
     autoTable(doc, {

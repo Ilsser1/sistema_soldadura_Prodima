@@ -132,11 +132,8 @@ export interface BitacoraRegistro {
     modulo: string;
     registro_id?: number | null;
     fecha: string;
-    fecha_hora?: string;
     direccion_ip: string;
-    ip_address?: string;
     descripcion: string;
-    detalles?: string;
 }
 export type Bitacora = BitacoraRegistro;
 export interface HistorialCompletoMaquina {

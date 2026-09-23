@@ -62,7 +62,6 @@ export async function readData(connection: PoolConnection): Promise<DatabaseData
       if ('numero_serie' in result && result.numero_serie === null) result.numero_serie = '';
       if ('homologado' in result) result.homologado = Boolean(result.homologado);
       if ('leida' in result) result.leida = Boolean(result.leida);
-      if (name === 'bitacora') Object.assign(result, { fecha_hora: result.fecha, ip_address: result.direccion_ip, detalles: result.descripcion });
       return result;
     });
     if (['bitacora','historial','alertas'].includes(name)) normalized.reverse();

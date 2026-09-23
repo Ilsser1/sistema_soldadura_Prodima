@@ -34,6 +34,8 @@ La opción `--remove-source` elimina únicamente `backend/data/db.json`, despué
 
 Los números de serie y fechas de adquisición desconocidos se guardan como NULL. Las contraseñas heredadas se convierten a hashes scrypt. La contraseña del usuario MySQL no es la del login de la aplicación.
 
+La bitácora utiliza `fecha`, `direccion_ip` y `descripcion`. La migración sigue aceptando los nombres antiguos del JSON, pero la API entrega únicamente los campos actuales.
+
 Abre http://localhost:3000. `/api/health` comprueba la disponibilidad de MySQL.
 
 ## Comprobaciones

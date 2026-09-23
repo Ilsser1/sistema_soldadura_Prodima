@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RolUsuario, Usuario, Alerta } from '../../../shared/types';
+import { Usuario, Alerta } from '../../../shared/types';
 import { useTheme } from '../context/ThemeContext';
 import { ProdimaLogo } from './ProdimaLogo';
 import {
@@ -16,7 +16,6 @@ import {
 
 interface NavbarProps {
   currentUser: Usuario;
-  activeRole?: RolUsuario;
   alertas?: Alerta[];
   unreadAlertsCount?: number;
   onMarkAlertRead?: (id: number) => void;
@@ -24,7 +23,6 @@ interface NavbarProps {
   onDeleteAlert?: (id: number) => void;
   onClearAllAlerts?: (soloLeidas?: boolean) => void;
   onNavigateToAlerts?: () => void;
-  onOpenAlerts?: () => void;
   onOpenLoginModal?: () => void;
   onToggleMobileMenu?: () => void;
   onLogout?: () => void;
@@ -32,7 +30,6 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   currentUser,
-  activeRole,
   alertas = [],
   unreadAlertsCount,
   onMarkAlertRead,
@@ -40,7 +37,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   onDeleteAlert,
   onClearAllAlerts,
   onNavigateToAlerts,
-  onOpenAlerts,
   onOpenLoginModal,
   onToggleMobileMenu,
   onLogout
@@ -61,7 +57,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const handleNavigateAlerts = () => {
     if (onNavigateToAlerts) onNavigateToAlerts();
-    if (onOpenAlerts) onOpenAlerts();
   };
 
   const unreadAlerts = (alertas || []).filter(a => !a.leida);
@@ -245,7 +240,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
               <div className="text-left hidden lg:block">
                 <div className="text-xs font-semibold text-slate-200 leading-none">{currentUser.nombre}</div>
-                <div className="text-[10px] text-slate-400 mt-0.5">{activeRole}</div>
+                <div className="text-[10px] text-slate-400 mt-0.5">{currentUser.rol}</div>
               </div>
             </button>
 

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { hashPassword, verifyPassword } from '../modulos/autenticacion/passwords.js';
 import { pool, emptyData, persistData, transaction, toSqlValue } from './conexion.js';
 import { withDatabase } from './transaccion-http.js';
-import { db } from './operaciones.js';
+import { db, IndustrialDatabase } from './operaciones.js';
 
 test('las contraseñas se almacenan como hash y se comprueban', () => {
   const hash = hashPassword('ClaveDePrueba123!');
@@ -19,6 +19,34 @@ test('fechas desconocidas y números de serie vacíos se guardan como NULL', () 
   assert.equal(toSqlValue('numero_serie', ''), null);
   assert.equal(toSqlValue('fecha', '2026-09-17T18:30:00.123Z'), '2026-09-17 18:30:00.123');
   assert.throws(() => toSqlValue('fecha_inicio', '2026-02-30'));
+});
+
+test('crear mantenimiento resuelve contrato y reasignación sin operaciones adicionales del cliente', () => {
+  const data = emptyData();
+  data.tecnicos = [
+    { id: 1, nombre: 'Ana', apellido: 'Uno', estado: 'Activo', homologado: true },
+    { id: 2, nombre: 'Luis', apellido: 'Dos', estado: 'Activo', homologado: true },
+  ] as any;
+  data.maquinas = [{ id: 1, codigo_interno: 'M-1', estado: 'Asignada' }] as any;
+  data.asignaciones = [{ id: 1, maquina_id: 1, tecnico_id: 1, estado: 'Activa' }] as any;
+  data.contratos = [{ id: 1, maquina_id: 1, numero_contrato: 'C-1', proveedor: 'Proveedor contrato', estado: 'Vigente', fecha_fin: '2999-12-31' }] as any;
+  const database = new IndustrialDatabase(data);
+  const mantenimiento = database.crearMantenimiento({ maquina_id: 1, tecnico_id: 2, tecnico_responsable: 'Luis Dos', descripcion: 'Revisión', costo: 25 }, '127.0.0.1', 'admin');
+  assert.equal(mantenimiento.proveedor, 'Proveedor contrato');
+  assert.match(mantenimiento.observaciones!, /C-1/);
+  assert.equal(data.asignaciones[0].estado, 'Finalizada');
+  assert.equal(data.asignaciones.filter(a => a.estado === 'Activa').length, 1);
+  assert.equal(data.asignaciones.find(a => a.estado === 'Activa')!.tecnico_id, 2);
+  assert.equal(data.maquinas[0].estado, 'En mantenimiento');
+  assert.equal(data.historial.filter(h => h.tipo_evento === 'Mantenimiento').length, 1);
+
+  database.crearMantenimiento({ maquina_id: 1, tecnico_id: 2, tecnico_responsable: 'Luis Dos' }, '127.0.0.1', 'admin');
+  assert.equal(data.asignaciones.length, 2);
+
+  data.contratos[0].fecha_fin = '2000-01-01';
+  const sinContrato = database.crearMantenimiento({ maquina_id: 1, tecnico_id: 2, proveedor: 'Taller' }, '127.0.0.1', 'admin');
+  assert.equal(sinContrato.proveedor, 'Taller');
+  assert.match(sinContrato.observaciones!, /Sin contrato activo/);
 });
 
 test('los cambios usan parámetros SQL y dejan intactas las filas sin cambios', async () => {

@@ -6,8 +6,9 @@ Configuración y comandos: [Guía MySQL](docs/MYSQL.md).
 
 ## Estructura
 
-- frontend/src/modulos/: pantallas y llamadas a la API por módulo.
-- frontend/src/components/, context/ y services/: componentes, tema y cliente HTTP.
+- frontend/src/modulos/: pantallas por módulo y exportación de reportes.
+- frontend/src/components/ y context/: componentes compartidos y tema visual.
+- frontend/src/services/: cliente HTTP y llamadas a la API centralizadas.
 - backend/modulos/: rutas, autenticación y permisos.
 - backend/database/: conexión, esquema y operaciones transaccionales.
 - shared/: tipos compartidos.

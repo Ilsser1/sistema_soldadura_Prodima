@@ -32,8 +32,8 @@ export const BitacoraView: React.FC<BitacoraViewProps> = ({
   }
 
   const filteredBitacora = (bitacora || []).filter(b => {
-    const detallesText = b.detalles || b.descripcion || '';
-    const ipText = b.ip_address || b.direccion_ip || '';
+    const detallesText = b.descripcion || '';
+    const ipText = b.direccion_ip || '';
     const matchesSearch =
       detallesText.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (b.usuario_nombre || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -130,7 +130,7 @@ export const BitacoraView: React.FC<BitacoraViewProps> = ({
                 <tr key={b.id} className="audit-table-row">
                   <td className="p-3">
                     <span className="audit-id font-semibold block">#{b.id}</span>
-                    <span className="audit-secondary whitespace-nowrap">{new Date(b.fecha_hora || b.fecha || Date.now()).toLocaleString()}</span>
+                    <span className="audit-secondary whitespace-nowrap">{new Date(b.fecha || Date.now()).toLocaleString()}</span>
                   </td>
                   <td className="p-3 font-semibold">
                     {b.usuario_nombre}
@@ -146,10 +146,10 @@ export const BitacoraView: React.FC<BitacoraViewProps> = ({
                     </span>
                   </td>
                   <td className="p-3 min-w-64 max-w-md break-words">
-                    {b.detalles || b.descripcion}
+                    {b.descripcion}
                   </td>
                   <td className="p-3 audit-secondary font-mono">
-                    {b.ip_address || b.direccion_ip}
+                    {b.direccion_ip}
                   </td>
                 </tr>
               ))}

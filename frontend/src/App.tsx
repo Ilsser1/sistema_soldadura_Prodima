@@ -136,33 +136,21 @@ export function App() {
   }, [selectedHistoryMachineId]);
 
   const handleLogin = async (usr: string, pass: string) => {
-    try {
-      const response = await api.login(usr, pass);
-      const user = response.user || (response as any).usuario;
-      if (user) {
-        localStorage.setItem('prodima_auth_token', response.token);
-        setStats(null); setUsuarios([]); setTecnicos([]); setMaquinas([]);
-        setAsignaciones([]); setMantenimientos([]); setContratos([]); setAlertas([]); setBitacora([]);
-        setSelectedHistoryMachineId(null);
-        setHistorialData(null);
-        setCurrentUser(user);
-        setIsAuthenticated(true);
-        localStorage.setItem('prodima_auth_user', JSON.stringify(user));
-        localStorage.setItem('active_role', user.rol);
-        localStorage.setItem('active_username', user.username);
-        setIsLoginModalOpen(false);
-        await reloadData();
-        return;
-      }
-    } catch (err) {
-      throw err;
-    }
+    const { token, user } = await api.login(usr, pass);
+    localStorage.setItem('prodima_auth_token', token);
+    localStorage.setItem('prodima_auth_user', JSON.stringify(user));
+    setStats(null); setUsuarios([]); setTecnicos([]); setMaquinas([]);
+    setAsignaciones([]); setMantenimientos([]); setContratos([]); setAlertas([]); setBitacora([]);
+    setSelectedHistoryMachineId(null);
+    setHistorialData(null);
+    setCurrentUser(user);
+    setIsAuthenticated(true);
+    setIsLoginModalOpen(false);
+    await reloadData();
   };
 
   const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + (localStorage.getItem('prodima_auth_token') || '') } }).catch(() => {});
-    } catch {}
+    await api.logout().catch(() => {});
     localStorage.removeItem('prodima_auth_token');
     setSelectedHistoryMachineId(null);
     setHistorialData(null);
@@ -199,11 +187,6 @@ export function App() {
 
   const handleActualizarTecnico = async (id: number, t: Partial<Tecnico> & { username?: string; password?: string; crear_usuario?: boolean }) => {
     await api.actualizarTecnico(id, t);
-    await reloadData();
-  };
-
-  const handleDesactivarTecnico = async (id: number) => {
-    await api.desactivarTecnico(id);
     await reloadData();
   };
 
@@ -244,67 +227,17 @@ export function App() {
   };
 
   const handleCrearAsignacion = async (data: { tecnico_id: number; maquina_id: number; motivo: string; observaciones?: string }) => {
-    await api.crearAsignacion({ ...data, usuario_id: currentUser.id });
+    await api.crearAsignacion(data);
     await reloadData();
   };
 
   const handleFinalizarAsignacion = async (id: number, observaciones?: string) => {
-    await api.finalizarAsignacion(id, currentUser.id, observaciones);
+    await api.finalizarAsignacion(id, observaciones);
     await reloadData();
   };
 
   const handleCrearMantenimiento = async (m: Partial<Mantenimiento>) => {
-    const contratoActivo = contratos.find(
-      c => c.maquina_id === m.maquina_id && ['Vigente', 'Próximo a vencer'].includes(c.estado)
-    );
-
-    let proveedorAjustado = m.proveedor;
-    let observacionesAjustadas = m.observaciones || '';
-
-    if (contratoActivo) {
-      proveedorAjustado = contratoActivo.proveedor;
-      const tagContrato = `[Póliza Activa: ${contratoActivo.numero_contrato}]`;
-      if (!observacionesAjustadas.includes(tagContrato)) {
-        observacionesAjustadas = `${tagContrato} ${observacionesAjustadas}`.trim();
-      }
-    } else {
-      const tagSinContrato = `[Sin contrato activo]`;
-      if (!observacionesAjustadas.includes(tagSinContrato)) {
-        observacionesAjustadas = `${tagSinContrato} ${observacionesAjustadas}`.trim();
-      }
-    }
-
-    const payloadMantenimiento: Partial<Mantenimiento> = {
-      ...m,
-      proveedor: proveedorAjustado,
-      observaciones: observacionesAjustadas
-    };
-
-    const nuevoMant = await api.crearMantenimiento(payloadMantenimiento, currentUser.id);
-
-    if (m.tecnico_id && m.maquina_id) {
-      const asignacionActiva = asignaciones.find(
-        a => a.maquina_id === m.maquina_id && a.estado === 'Activa'
-      );
-
-      if (!asignacionActiva || asignacionActiva.tecnico_id !== m.tecnico_id) {
-        if (asignacionActiva) {
-          await api.finalizarAsignacion(
-            asignacionActiva.id,
-            currentUser.id,
-            `Reasignación por orden de mantenimiento #${nuevoMant?.id || ''}`
-          );
-        }
-
-        await api.crearAsignacion({
-          tecnico_id: m.tecnico_id,
-          maquina_id: m.maquina_id,
-          motivo: `Mantenimiento ${m.tipo || 'Preventivo'}: ${m.descripcion || ''}`,
-          observaciones: `Orden #${nuevoMant?.id || ''}`,
-          usuario_id: currentUser.id
-        });
-      }
-    }
+    await api.crearMantenimiento(m);
 
     if (m.maquina_id) {
       try {
@@ -321,7 +254,7 @@ export function App() {
   };
 
   const handleActualizarMantenimiento = async (id: number, m: Partial<Mantenimiento>) => {
-    await api.actualizarMantenimiento(id, m, currentUser.id);
+    await api.actualizarMantenimiento(id, m);
     await reloadData();
   };
 
@@ -331,12 +264,12 @@ export function App() {
   };
 
   const handleCrearContrato = async (c: Partial<ContratoMantenimiento>) => {
-    await api.crearContrato(c, currentUser.id);
+    await api.crearContrato(c);
     await reloadData();
   };
 
   const handleActualizarContrato = async (id: number, c: Partial<ContratoMantenimiento>) => {
-    await api.actualizarContrato(id, c, currentUser.id);
+    await api.actualizarContrato(id, c);
     await reloadData();
   };
 
@@ -388,15 +321,7 @@ export function App() {
 
   const isTechnician = currentUser.rol === 'Técnico';
 
-  // The API derives visibility from the authenticated user and exact database IDs.
-  const scopedAsignaciones = asignaciones;
-  const scopedMantenimientos = mantenimientos;
-  const scopedMaquinas = maquinas;
-  const scopedTecnicos = tecnicos;
-  const scopedContratos = contratos;
-  const scopedAlertas = alertas;
-
-  const unreadAlertsCount = (scopedAlertas || []).filter(a => !a.leida).length;
+  const unreadAlertsCount = (alertas || []).filter(a => !a.leida).length;
 
   useEffect(() => {
     if (isTechnician) {
@@ -428,15 +353,13 @@ export function App() {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased selection:bg-amber-500 selection:text-slate-950">
       <Navbar
         currentUser={currentUser}
-        activeRole={currentUser.rol}
-        alertas={scopedAlertas}
+        alertas={alertas}
         unreadAlertsCount={unreadAlertsCount}
         onMarkAlertRead={handleMarkAlertRead}
         onMarkAllAlertsRead={handleMarkAllAlertsRead}
         onDeleteAlert={handleDeleteAlert}
         onClearAllAlerts={handleClearAllAlerts}
         onNavigateToAlerts={() => setActiveTab('alertas')}
-        onOpenAlerts={() => setActiveTab('alertas')}
         onOpenLoginModal={() => setIsLoginModalOpen(true)}
         onToggleMobileMenu={() => setIsMobileMenuOpen(prev => !prev)}
         onLogout={handleLogout}
@@ -465,10 +388,10 @@ export function App() {
               {activeTab === 'dashboard' && (
                 <DashboardView
                   stats={stats}
-                  alertas={scopedAlertas}
+                  alertas={alertas}
                   currentUser={currentUser}
-                  asignaciones={scopedAsignaciones}
-                  mantenimientos={scopedMantenimientos}
+                  asignaciones={asignaciones}
+                  mantenimientos={mantenimientos}
                   onNavigate={setActiveTab}
                   onRefresh={reloadData}
                 />
@@ -486,11 +409,10 @@ export function App() {
 
               {activeTab === 'tecnicos' && !isTechnician && (
                 <TecnicosView
-                  tecnicos={scopedTecnicos}
+                  tecnicos={tecnicos}
                   usuarios={usuarios}
                   onCrear={handleCrearTecnico}
                   onActualizar={handleActualizarTecnico}
-                  onDesactivar={handleDesactivarTecnico}
                   onEliminar={handleEliminarTecnico}
                   onLimpiarTodo={handleLimpiarTodo}
                   isReadOnly={false}
@@ -499,7 +421,7 @@ export function App() {
 
               {activeTab === 'maquinas' && (
                 <MaquinasView
-                  maquinas={scopedMaquinas}
+                  maquinas={maquinas}
                   onCrear={handleCrearMaquina}
                   onActualizar={handleActualizarMaquina}
                   onDarDeBaja={handleDarDeBajaMaquina}
@@ -511,8 +433,8 @@ export function App() {
 
               {activeTab === 'asignaciones' && (
                 <AsignacionesView
-                  asignaciones={scopedAsignaciones}
-                  tecnicos={scopedTecnicos}
+                  asignaciones={asignaciones}
+                  tecnicos={tecnicos}
                   maquinas={maquinas}
                   onCrear={handleCrearAsignacion}
                   onFinalizar={handleFinalizarAsignacion}
@@ -522,7 +444,7 @@ export function App() {
 
               {activeTab === 'mantenimientos' && (
                 <MantenimientosView
-                  mantenimientos={scopedMantenimientos}
+                  mantenimientos={mantenimientos}
                   maquinas={maquinas}
                   tecnicos={tecnicos}
                   currentUser={currentUser}
@@ -535,8 +457,8 @@ export function App() {
 
               {activeTab === 'contratos' && (
                 <ContratosView
-                  contratos={scopedContratos}
-                  maquinas={scopedMaquinas}
+                  contratos={contratos}
+                  maquinas={maquinas}
                   onCrear={handleCrearContrato}
                   onActualizar={handleActualizarContrato}
                   isReadOnly={isTechnician}
@@ -546,7 +468,7 @@ export function App() {
 
               {activeTab === 'alertas' && (
                 <AlertasView
-                  alertas={scopedAlertas}
+                  alertas={alertas}
                   onMarkAsRead={handleMarkAlertRead}
                   onMarkAllAsRead={handleMarkAllAlertsRead}
                   onDelete={handleDeleteAlert}
@@ -557,8 +479,8 @@ export function App() {
 
               {activeTab === 'historial' && (
                 <HistorialView
-                  maquinas={scopedMaquinas}
-                  selectedMaquinaId={selectedHistoryMachineId || (scopedMaquinas.length > 0 ? scopedMaquinas[0].id : null)}
+                  maquinas={maquinas}
+                  selectedMaquinaId={selectedHistoryMachineId || (maquinas.length > 0 ? maquinas[0].id : null)}
                   onSelectMaquina={setSelectedHistoryMachineId}
                   historialData={historialData}
                   loading={loadingHistorial}
@@ -581,6 +503,7 @@ export function App() {
                   contratos={contratos}
                   bitacora={bitacora}
                   currentRole={currentUser.rol}
+                  usuarioNombre={currentUser.username}
                 />
               )}
 

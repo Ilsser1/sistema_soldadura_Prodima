@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Maquina, Tecnico, Asignacion, Mantenimiento, ContratoMantenimiento, Bitacora, RolUsuario } from '../../../../shared/types';
-import { exportReportToPDF, ReportType } from './pdfExport';
+import type { ReportType } from './pdfExport';
 import {
   FileSpreadsheet,
   Filter,
@@ -22,6 +22,7 @@ interface ReportesViewProps {
   contratos: ContratoMantenimiento[];
   bitacora: Bitacora[];
   currentRole?: RolUsuario;
+  usuarioNombre: string;
 }
 
 export const ReportesView: React.FC<ReportesViewProps> = ({
@@ -31,6 +32,7 @@ export const ReportesView: React.FC<ReportesViewProps> = ({
   mantenimientos = [],
   contratos = [],
   bitacora = [],
+  usuarioNombre,
   currentRole = 'Administrador'
 }) => {
   const [selectedReport, setSelectedReport] = useState<ReportType>('inventario');
@@ -49,9 +51,10 @@ export const ReportesView: React.FC<ReportesViewProps> = ({
     );
   }
 
-  const handleExportPDF = (typeToExport: ReportType = selectedReport) => {
+  const handleExportPDF = async (typeToExport: ReportType = selectedReport) => {
     try {
       setIsGeneratingPdf(true);
+      const { exportReportToPDF } = await import('./pdfExport');
       exportReportToPDF({
         reportType: typeToExport,
         maquinas,
@@ -60,7 +63,7 @@ export const ReportesView: React.FC<ReportesViewProps> = ({
         mantenimientos,
         contratos,
         bitacora,
-        usuarioNombre: localStorage.getItem('active_username') || 'Administrador'
+        usuarioNombre
       });
       setPdfSuccessMessage(`¡Reporte PDF (${typeToExport.toUpperCase()}) generado y descargado exitosamente!`);
       setTimeout(() => setPdfSuccessMessage(null), 4000);
@@ -378,12 +381,12 @@ export const ReportesView: React.FC<ReportesViewProps> = ({
                 {bitacora.slice(0, 50).map(b => (
                   <tr key={b.id}>
                     <td className="p-2 font-mono">#{b.id}</td>
-                    <td className="p-2">{new Date(b.fecha_hora).toLocaleString()}</td>
+                    <td className="p-2">{new Date(b.fecha).toLocaleString()}</td>
                     <td className="p-2 font-semibold">{b.usuario_nombre}</td>
                     <td className="p-2">{b.modulo}</td>
                     <td className="p-2 font-bold">{b.accion}</td>
-                    <td className="p-2 text-[11px]">{b.detalles}</td>
-                    <td className="p-2 font-mono text-[10px]">{b.ip_address}</td>
+                    <td className="p-2 text-[11px]">{b.descripcion}</td>
+                    <td className="p-2 font-mono text-[10px]">{b.direccion_ip}</td>
                   </tr>
                 ))}
               </tbody>

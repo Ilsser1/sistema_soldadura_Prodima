@@ -20,8 +20,7 @@ router.post('/api/auth/login', withDatabase((req: Request, res: Response) => {
 
     return res.json({
       token: createSession(usuario.id),
-      user: usuario,
-      usuario
+      user: usuario
     });
   }));
 

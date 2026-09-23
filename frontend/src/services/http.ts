@@ -1,14 +1,10 @@
 const API_BASE = '/api';
 
 export async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
-  const currentUserRole = localStorage.getItem('active_role') || 'Administrador';
-  const currentUsername = localStorage.getItem('active_username') || 'admin';
 
   const headers = {
     'Content-Type': 'application/json',
     'Authorization': 'Bearer ' + (localStorage.getItem('prodima_auth_token') || ''),
-    'x-user-role': currentUserRole,
-    'x-user-name': currentUsername,
     ...(options?.headers || {})
   };
 

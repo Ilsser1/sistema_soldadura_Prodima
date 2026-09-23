@@ -41,7 +41,6 @@ interface TecnicosViewProps {
   usuarios: Usuario[];
   onCrear: (t: Partial<Tecnico> & { crear_usuario?: boolean; username?: string; password?: string }) => Promise<void>;
   onActualizar: (id: number, t: Partial<Tecnico> & { username?: string; password?: string; crear_usuario?: boolean }) => Promise<void>;
-  onDesactivar: (id: number) => Promise<void>;
   onEliminar?: (id: number, permanente?: boolean) => Promise<void>;
   onLimpiarTodo?: () => Promise<void>;
   isReadOnly?: boolean;
