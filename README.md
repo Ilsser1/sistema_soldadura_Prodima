@@ -2,6 +2,8 @@
 
 Esta guía explica el proyecto para una persona que no programa y necesita comprenderlo, demostrarlo y definir una tesis. Está basada en el código del repositorio, revisado el 8 de octubre de 2026. Las propuestas académicas son sugerencias; los resultados de mejora requieren medición real.
 
+Para estudiar desde cero, abre el [manual completo en Word](docs/Manual_Proyecto_Soldadura_PRODIMA.docx), que explica cada carpeta y área con ejemplos e incluye los catálogos y guías como anexos. La explicación didáctica también está disponible en [Markdown](docs/MANUAL_PROYECTO.md).
+
 ## 1. Qué hace el sistema
 
 Es una aplicación web para administrar máquinas de soldar, técnicos, entrega y devolución de equipos, mantenimientos y contratos de servicio. Permite consultar información resumida, alertas y registros históricos, y descargar reportes.
